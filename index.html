@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mathmorize</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    font-family: "Poppins", sans-serif;
+    background-color: #fafafa;
+    color: #111;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .container {
+    background: #fff;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    border-radius: 16px;
+    padding: 30px;
+    width: 100%;
+    max-width: 850px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  h1 {
+    font-weight: 600;
+    margin: 0 0 8px 0;
+  }
+
+  p.subtitle {
+    margin: 0 0 24px 0;
+    color: #444;
+    font-size: 0.95em;
+  }
+
+  #modeSelect p {
+    color: #444;
+    margin-bottom: 10px;
+  }
+
+  #modeSelect button {
+    margin: 8px;
+    padding: 12px 26px;
+    background-color: #111;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 15px;
+    transition: background 0.2s, transform 0.1s;
+  }
+
+  #modeSelect button:hover {
+    background-color: #333;
+    transform: translateY(-2px);
+  }
+
+  #timer {
+    font-size: 1.1em;
+    margin: 20px 0;
+  }
+
+  #grid {
+    display: grid;
+    gap: 14px;
+    margin-top: 10px;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .card {
+    background-color: #111;
+    color: white;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 85px;
+    width: 150px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: transform 0.25s, box-shadow 0.25s;
+  }
+
+  .card:hover {
+    transform: scale(1.03);
+  }
+
+  .hidden {
+    background-color: #f0f0f0;
+  }
+
+  .answer-input {
+    width: 80%;
+    text-align: center;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 8px;
+    font-family: inherit;
+  }
+
+  #finishBtn {
+    margin-top: 26px;
+    padding: 12px 26px;
+    background-color: #111;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s, transform 0.1s;
+  }
+
+  #finishBtn:hover {
+    background-color: #333;
+    transform: translateY(-2px);
+  }
+
+  #result {
+    margin-top: 25px;
+    font-weight: 600;
+    font-size: 1.1em;
+  }
+
+  #note {
+    color: #666;
+    margin-top: 20px;
+    font-size: 0.9em;
+  }
+
+  @media (max-width: 600px) {
+    .card {
+      width: 100px;
+      height: 70px;
+      font-size: 1em;
+    }
+
+    .container {
+      padding: 30px;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>Mathmorize</h1>
+    <div id="modeSelect">
+      <p>Difficulty</p>
+      <button data-size="2">Easy (2×2)</button>
+      <button data-size="4">Medium (4×4)</button>
+      <button data-size="5">Hard (5×5)</button>
+    </div>
+
+    <div id="timer"></div>
+    <div id="grid"></div>
+    <button id="finishBtn" style="display:none;">Selesai</button>
+    <div id="result"></div>
+    <div id="note" style="display:none;">Hafalkan semua operasi matematika ini!</div>
+  </div>
+
+<script>
+const modeButtons = document.querySelectorAll('#modeSelect button');
+const grid = document.getElementById('grid');
+const timerDisplay = document.getElementById('timer');
+const finishBtn = document.getElementById('finishBtn');
+const resultDiv = document.getElementById('result');
+const note = document.getElementById('note');
+
+let size = 0;
+let timer;
+let countdown = 60;
+let showingQuestions = true;
+let questions = [];
+let correctAnswers = [];
+
+modeButtons.forEach(btn => {
+  btn.addEventListener('click', () => startGame(parseInt(btn.dataset.size)));
+});
+
+function startGame(gridSize) {
+  size = gridSize;
+  grid.innerHTML = '';
+  resultDiv.textContent = '';
+  countdown = 60;
+  showingQuestions = true;
+  questions = [];
+  correctAnswers = [];
+
+  grid.style.gridTemplateColumns = `repeat(${size}, 150px)`;
+
+  const total = size * size;
+  for (let i = 0; i < total; i++) {
+    const [q, ans] = randomQuestion();
+    questions.push(q);
+    correctAnswers.push(ans);
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.textContent = q;
+    grid.appendChild(card);
+  }
+
+  document.getElementById('modeSelect').style.display = 'none';
+  timerDisplay.textContent = `Waktu: ${countdown}s`;
+  note.style.display = 'block';
+  timer = setInterval(updateTimer, 1000);
+}
+
+function randomQuestion() {
+  const ops = ['+', '-', '*', '/'];
+  const a = Math.floor(Math.random() * 20) + 1;
+  const b = Math.floor(Math.random() * 10) + 1;
+  const op = ops[Math.floor(Math.random() * ops.length)];
+  let question = `${a} ${op} ${b}`;
+  let answer;
+  switch (op) {
+    case '+': answer = a + b; break;
+    case '-': answer = a - b; break;
+    case '*': answer = a * b; break;
+    case '/': answer = (a / b).toFixed(1); break;
+  }
+  return [question, answer.toString()];
+}
+
+function updateTimer() {
+  countdown--;
+  timerDisplay.textContent = `Waktu: ${countdown}s`;
+
+  if (countdown <= 0) {
+    clearInterval(timer);
+    hideQuestions();
+  }
+}
+
+function hideQuestions() {
+  showingQuestions = false;
+  note.style.display = 'none';
+  const cardDivs = document.querySelectorAll('.card');
+  cardDivs.forEach((card, i) => {
+    card.classList.add('hidden');
+    card.innerHTML = `<input class="answer-input" placeholder="Jawaban">`;
+  });
+  finishBtn.style.display = 'inline-block';
+}
+
+finishBtn.addEventListener('click', () => {
+  const inputs = document.querySelectorAll('.answer-input');
+  let score = 0;
+  inputs.forEach((inp, i) => {
+    const userAns = inp.value.trim();
+    const correct = correctAnswers[i];
+    const card = inp.parentElement;
+    if (userAns === correct) {
+      card.style.backgroundColor = '#111';
+      card.style.color = '#fff';
+      score += 200;
+    } else {
+      card.style.backgroundColor = '#e0e0e0';
+      card.style.color = '#555';
+      score -= 100;
+    }
+    card.textContent = `${questions[i]} = ${correct}`;
+  });
+  finishBtn.style.display = 'none';
+  resultDiv.textContent = `Skor akhir: ${score}`;
+  timerDisplay.textContent = '';
+});
+</script>
+</body>
+</html>
